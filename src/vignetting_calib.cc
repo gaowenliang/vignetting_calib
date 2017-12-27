@@ -69,7 +69,7 @@ main( int argc, char** argv )
         ( "cropper_height", value< int >( &cropper_size.height )->default_value( 0 ), "cropper image height" )
         ( "center_x", value< int >( &cropper_center.x )->default_value( 0 ), "cropper image center x " )
         ( "center_y", value< int >( &cropper_center.y )->default_value( 0 ), "cropper image center y " )
-        ( "is_color", value< bool >( is_color )->default_value( false ), " is_color " )
+        ( "is_color", value< bool >( &is_color )->default_value( false ), " is_color " )
         ;
     /* clang-format on */
     boost::program_options::positional_options_description pdesc;
