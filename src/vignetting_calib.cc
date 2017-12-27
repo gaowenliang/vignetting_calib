@@ -41,6 +41,7 @@ main( int argc, char** argv )
     cv::Size cropper_size( 0, 0 );
     cv::Point cropper_center( 100, 100 );
     bool is_first_run = true;
+    bool is_color     = false;
 
     //========= Handling Program options =========
 
@@ -68,17 +69,15 @@ main( int argc, char** argv )
         ( "cropper_height", value< int >( &cropper_size.height )->default_value( 0 ), "cropper image height" )
         ( "center_x", value< int >( &cropper_center.x )->default_value( 0 ), "cropper image center x " )
         ( "center_y", value< int >( &cropper_center.y )->default_value( 0 ), "cropper image center y " )
+        ( "is_color", value< bool >( is_color )->default_value( false ), " is_color " )
         ;
     /* clang-format on */
     boost::program_options::positional_options_description pdesc;
     pdesc.add( "input", 1 );
 
     boost::program_options::variables_map vm;
-    boost::program_options::store( boost::program_options::command_line_parser( argc, argv )
-                                   .options( desc )
-                                   .positional( pdesc )
-                                   .run( ),
-                                   vm );
+    boost::program_options::store(
+    boost::program_options::command_line_parser( argc, argv ).options( desc ).positional( pdesc ).run( ), vm );
     boost::program_options::notify( vm );
 
     if ( vm.count( "help" ) )
@@ -97,7 +96,8 @@ main( int argc, char** argv )
     std::vector< std::string > imageFilenames;
     boost::filesystem::directory_iterator itr;
     for ( boost::filesystem::directory_iterator itr( inputDir );
-          itr != boost::filesystem::directory_iterator( ); ++itr )
+          itr != boost::filesystem::directory_iterator( );
+          ++itr )
     {
         if ( !boost::filesystem::is_regular_file( itr->status( ) ) )
         {
@@ -116,8 +116,7 @@ main( int argc, char** argv )
         }
 
         // check if file extension matches
-        if ( filename.compare( filename.length( ) - fileExtension.length( ),
-                               fileExtension.length( ), fileExtension )
+        if ( filename.compare( filename.length( ) - fileExtension.length( ), fileExtension.length( ), fileExtension )
              != 0 )
         {
             continue;
@@ -143,6 +142,9 @@ main( int argc, char** argv )
     }
 
     cv::Mat image = cv::imread( imageFilenames.front( ), -1 );
+    cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
+    cv::imshow( "image_show", image );
+    cv::waitKey( 0 );
 
     std::string file = "/home/gao/ws2/bags/laoge/left_fisheye_camera_calib.yaml";
 
@@ -150,9 +152,12 @@ main( int argc, char** argv )
     std::cout << " haha 3" << std::endl;
 
     std::vector< bool > chessboardFound( imageFilenames.size( ), false );
-    for ( size_t i = 0; i < imageFilenames.size( ); ++i )
+
+    int index = 0;
+    //#pragma omp parallel for private( index )
+    for ( index = 0; index < imageFilenames.size( ); ++index )
     {
-        image = cv::imread( imageFilenames.at( i ), -1 );
+        image = cv::imread( imageFilenames.at( index ), -1 );
 
         camera_model::Chessboard chessboard( boardSize, image );
 
@@ -161,26 +166,26 @@ main( int argc, char** argv )
         {
             if ( verbose )
             {
-                std::cerr << "# INFO: Detected chessboard in image " << i + 1 << ", "
-                          << imageFilenames.at( i ) << std::endl;
+                std::cerr << "# INFO: Detected chessboard in image " << index + 1 << ", "
+                          << imageFilenames.at( index ) << std::endl;
             }
 
-            calib_vignetting.drawPoints( image, chessboard.getCorners( ) );
+            cv::Mat image_show = calib_vignetting.getPoints( image, chessboard.getCorners( ) );
 
             cv::Mat sketch;
             chessboard.getSketch( ).copyTo( sketch );
 
-            //  cv::namedWindow( "Image", cv::WINDOW_NORMAL );
-            //  cv::imshow( "Image", sketch );
-            cv::waitKey( 10 );
+            cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
+            cv::imshow( "image_show", image_show );
+            cv::waitKey( 1 );
         }
         else if ( verbose )
         {
             std::cout << "\033[31;47;1m"
-                      << "# INFO: Did not detect chessboard in image: " << imageFilenames.at( i )
+                      << "# INFO: Did not detect chessboard in image: " << imageFilenames.at( index )
                       << "\033[0m" << std::endl;
         }
-        chessboardFound.at( i ) = chessboard.cornersFound( );
+        chessboardFound.at( index ) = chessboard.cornersFound( );
     }
     cv::destroyWindow( "Image" );
     std::cout << " haha 4" << std::endl;
@@ -199,19 +204,21 @@ main( int argc, char** argv )
 
     calib_vignetting.resualt( );
 
-    //    for ( size_t i = 0; i < imageFilenames.size( ); ++i )
-    //    {
-    //        cv::Mat image_in   = cv::imread( imageFilenames.at( i ), -1 );
-    //        cv::Mat image_show = calib_vignetting.remove( image_in );
-    //        cv::imshow( "image_show", image_show );
-    //        cv::waitKey( 0 );
-    //    }
+    for ( size_t i = 0; i < imageFilenames.size( ); ++i )
+    {
+        cv::Mat image_in   = cv::imread( imageFilenames.at( i ), -1 );
+        cv::Mat image_show = calib_vignetting.remove( image_in );
+        cv::namedWindow( "image_in", cv::WINDOW_NORMAL );
+        cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
+        cv::imshow( "image_in", image_in );
+        cv::imshow( "image_show", image_show );
+        cv::waitKey( 0 );
+    }
 
     if ( verbose )
     {
-        std::cout << "# INFO: Calibration took a total time of " << std::fixed
-                  << std::setprecision( 3 ) << camera_model::timeInSeconds( ) - startTime
-                  << " sec.\n";
+        std::cout << "# INFO: Calibration took a total time of " << std::fixed << std::setprecision( 3 )
+                  << camera_model::timeInSeconds( ) - startTime << " sec.\n";
     }
 
     return 0;
