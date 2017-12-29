@@ -1,4 +1,5 @@
 #include "vignettingcalib.h"
+#include <opencv2/opencv.hpp>
 
 camera_model::VignettingCalib::VignettingCalib( cv::Size image_size,
                                                 std::string camera_model_file,
@@ -91,11 +92,14 @@ camera_model::VignettingCalib::showResualt( )
         for ( int index = 0; index < 3; ++index )
         {
             cv::Mat img_tmp( image_size, CV_8UC1, cv::Scalar( 0 ) );
-            for ( int raw_index = 0; raw_index < image_size.height; ++raw_index )
+            for ( int row_index = 0; row_index < image_size.height; ++row_index )
                 for ( int col_index = 0; col_index < image_size.width; ++col_index )
                 {
-                    double value = get( col_index, raw_index, index );
-                    img_tmp.at< uchar >( raw_index, col_index ) = value;
+                    double value = get( col_index, row_index, index );
+                    if ( value > 255 )
+                        value = 255;
+
+                    img_tmp.at< uchar >( row_index, col_index ) = value;
                 }
             images.push_back( img_tmp );
         }
@@ -116,12 +120,14 @@ camera_model::VignettingCalib::showResualt( )
     {
         cv::Mat image( image_size, CV_8UC1, cv::Scalar( 0 ) );
 
-        for ( int raw_index = 0; raw_index < image_size.height; ++raw_index )
+        for ( int row_index = 0; row_index < image_size.height; ++row_index )
             for ( int col_index = 0; col_index < image_size.width; ++col_index )
             {
-                double value = get( col_index, raw_index, 0 );
-                //                std::cout << " value " << value << std::endl;
-                image.at< uchar >( raw_index, col_index ) = value;
+                double value = get( col_index, row_index, 0 );
+                if ( value > 255 )
+                    value = 255;
+
+                image.at< uchar >( row_index, col_index ) = value;
             }
 
         cv::namedWindow( "resualt", cv::WINDOW_NORMAL );
@@ -184,30 +190,30 @@ camera_model::VignettingCalib::getPoints( cv::Mat image_in, std::vector< cv::Poi
     }
 
     int cnt = 0;
-    for ( int raw_index = 0; raw_index < chessbordSize.height - 1; ++raw_index )
+    for ( int row_index = 0; row_index < chessbordSize.height - 1; ++row_index )
         for ( int col_index = 0; col_index < chessbordSize.width - 1; ++col_index )
         {
-            int raw_index_add = chessbordSize.width * raw_index;
+            int row_index_add = chessbordSize.width * row_index;
             ++cnt;
 
-            double dx_raw = ( points[raw_index_add + col_index].x
-                              - points[raw_index_add + col_index + chessbordSize.width].x );
-            double dy_raw = ( points[raw_index_add + col_index].y
-                              - points[raw_index_add + col_index + chessbordSize.width].y );
+            double dx_raw = ( points[row_index_add + col_index].x
+                              - points[row_index_add + col_index + chessbordSize.width].x );
+            double dy_raw = ( points[row_index_add + col_index].y
+                              - points[row_index_add + col_index + chessbordSize.width].y );
             double dx_col
-            = ( points[raw_index_add + col_index].x - points[raw_index_add + col_index + 1].x );
+            = ( points[row_index_add + col_index].x - points[row_index_add + col_index + 1].x );
             double dy_col
-            = ( points[raw_index_add + col_index].y - points[raw_index_add + col_index + 1].y );
+            = ( points[row_index_add + col_index].y - points[row_index_add + col_index + 1].y );
 
             double avg_x
-            = ( points[raw_index_add + col_index].x + points[raw_index_add + col_index + 1].x
-                + points[raw_index_add + col_index + chessbordSize.width].x
-                + points[raw_index_add + col_index + chessbordSize.width + 1].x )
+            = ( points[row_index_add + col_index].x + points[row_index_add + col_index + 1].x
+                + points[row_index_add + col_index + chessbordSize.width].x
+                + points[row_index_add + col_index + chessbordSize.width + 1].x )
               / 4;
             double avg_y
-            = ( points[raw_index_add + col_index].y + points[raw_index_add + col_index + 1].y
-                + points[raw_index_add + col_index + chessbordSize.width].y
-                + points[raw_index_add + col_index + chessbordSize.width + 1].y )
+            = ( points[row_index_add + col_index].y + points[row_index_add + col_index + 1].y
+                + points[row_index_add + col_index + chessbordSize.width].y
+                + points[row_index_add + col_index + chessbordSize.width + 1].y )
               / 4;
 
             double index_x;
@@ -215,7 +221,7 @@ camera_model::VignettingCalib::getPoints( cv::Mat image_in, std::vector< cv::Poi
 
             int threshold = 60;
 
-            if ( raw_index == 0 )
+            if ( row_index == 0 )
             {
                 index_x = avg_x + dx_raw;
                 index_y = avg_y + dy_raw;
@@ -229,7 +235,7 @@ camera_model::VignettingCalib::getPoints( cv::Mat image_in, std::vector< cv::Poi
                 inBoard( index_x, index_y );
                 addValue( image, image_color, index_x, index_y, threshold );
             }
-            if ( raw_index == chessbordSize.height - 2 )
+            if ( row_index == chessbordSize.height - 2 )
             {
                 index_x = avg_x - dx_raw;
                 index_y = avg_y - dy_raw;
@@ -243,28 +249,28 @@ camera_model::VignettingCalib::getPoints( cv::Mat image_in, std::vector< cv::Poi
                 inBoard( index_x, index_y );
                 addValue( image, image_color, index_x, index_y, threshold );
             }
-            if ( raw_index == 0 && col_index == 0 )
+            if ( row_index == 0 && col_index == 0 )
             {
                 index_x = avg_x + dx_raw + dx_col;
                 index_y = avg_y + dy_raw + dy_col;
                 inBoard( index_x, index_y );
                 addValue( image, image_color, index_x, index_y, threshold );
             }
-            else if ( raw_index == 0 && col_index == chessbordSize.width - 2 )
+            else if ( row_index == 0 && col_index == chessbordSize.width - 2 )
             {
                 index_x = avg_x + dx_raw - dx_col;
                 index_y = avg_y + dy_raw - dy_col;
                 inBoard( index_x, index_y );
                 addValue( image, image_color, index_x, index_y, threshold );
             }
-            else if ( raw_index == chessbordSize.height - 2 && col_index == 0 )
+            else if ( row_index == chessbordSize.height - 2 && col_index == 0 )
             {
                 index_x = avg_x - dx_raw + dx_col;
                 index_y = avg_y - dy_raw + dy_col;
                 inBoard( index_x, index_y );
                 addValue( image, image_color, index_x, index_y, threshold );
             }
-            else if ( raw_index == chessbordSize.height - 2 && col_index == chessbordSize.width - 2 )
+            else if ( row_index == chessbordSize.height - 2 && col_index == chessbordSize.width - 2 )
             {
                 index_x = avg_x - dx_raw - dx_col;
                 index_y = avg_y - dy_raw - dy_col;

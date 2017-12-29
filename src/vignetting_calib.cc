@@ -20,6 +20,7 @@ backward::SignalHandling sh;
 #include <camera_model/gpl/gpl.h>
 
 #include "vignettingcalib.h"
+#include "vignettingtable.h"
 
 int
 main( int argc, char** argv )
@@ -210,7 +211,7 @@ main( int argc, char** argv )
 
     for ( size_t i = 0; i < imageFilenames.size( ); ++i )
     {
-        cv::Mat image_in = cv::imread( imageFilenames.at( i ), cv::IMREAD_GRAYSCALE );
+        cv::Mat image_in = cv::imread( imageFilenames.at( i ), -1 );
 
         startTime          = camera_model::timeInSeconds( );
         cv::Mat image_show = calib_vignetting.remove( image_in );

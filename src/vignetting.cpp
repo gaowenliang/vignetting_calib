@@ -47,15 +47,15 @@ camera_model::vignetting::remove( cv::Mat image_in )
     if ( m_is_color )
     {
         cv::Mat image_tmp( image_in.rows, image_in.cols, CV_8UC3 );
-        for ( int raw_index = 0; raw_index < image_size.height; ++raw_index )
+        for ( int row_index = 0; row_index < image_size.height; ++row_index )
             for ( int col_index = 0; col_index < image_size.width; ++col_index )
             {
-                cv::Vec3b velue = image_in.at< cv::Vec3b >( raw_index, col_index );
+                cv::Vec3b velue = image_in.at< cv::Vec3b >( row_index, col_index );
                 cv::Vec3b valuw_feeded;
                 double feed[3];
                 for ( int index = 0; index < 3; ++index )
                 {
-                    feed[index] = m_params.at( index ).at( 0 ) / get( col_index, raw_index, index );
+                    feed[index] = m_params.at( index ).at( 0 ) / get( col_index, row_index, index );
                     int value_feeded_tmp = velue[index] * feed[index];
                     if ( value_feeded_tmp > 255 )
                         value_feeded_tmp = 255;
@@ -65,26 +65,26 @@ camera_model::vignetting::remove( cv::Mat image_in )
                     //  std::cout << " valuw_feeded[index] " <<  valuw_feeded[index] <<
                     //  std::endl;
                 }
-                image_tmp.at< cv::Vec3b >( raw_index, col_index ) = valuw_feeded;
+                image_tmp.at< cv::Vec3b >( row_index, col_index ) = valuw_feeded;
             }
         return image_tmp;
     }
     else
     {
         cv::Mat image_tmp( image_in.rows, image_in.cols, CV_8UC1 );
-        for ( int raw_index = 0; raw_index < image_size.height; ++raw_index )
+        for ( int row_index = 0; row_index < image_size.height; ++row_index )
         {
             for ( int col_index = 0; col_index < image_size.width; ++col_index )
             {
-                double feed      = m_params[0][0] / get( col_index, raw_index, 0 );
-                int velue        = image_in.at< uchar >( raw_index, col_index );
+                double feed      = m_params[0][0] / get( col_index, row_index, 0 );
+                int velue        = image_in.at< uchar >( row_index, col_index );
                 int valuw_feeded = velue * feed;
                 if ( valuw_feeded > 255 )
                     valuw_feeded = 255;
                 if ( valuw_feeded < 0 )
                     valuw_feeded = 0;
 
-                image_tmp.at< uchar >( raw_index, col_index ) = valuw_feeded;
+                image_tmp.at< uchar >( row_index, col_index ) = valuw_feeded;
             }
         }
         return image_tmp;
