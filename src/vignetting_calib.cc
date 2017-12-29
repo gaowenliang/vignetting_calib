@@ -19,7 +19,7 @@ backward::SignalHandling sh;
 #include <camera_model/code_utils/cv_utils.h>
 #include <camera_model/gpl/gpl.h>
 
-#include "vignetting.h"
+#include "vignettingcalib.h"
 
 int
 main( int argc, char** argv )
@@ -142,13 +142,10 @@ main( int argc, char** argv )
     }
 
     cv::Mat image = cv::imread( imageFilenames.front( ), -1 );
-    cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
-    cv::imshow( "image_show", image );
-    cv::waitKey( 0 );
-
+    cv::Size input_image_size( image.cols, image.rows );
     std::string file = "/home/gao/ws2/bags/laoge/left_fisheye_camera_calib.yaml";
 
-    camera_model::vignetting calib_vignetting( file, boardSize );
+    camera_model::VignettingCalib calib_vignetting( input_image_size, file, boardSize, is_color );
     std::cout << " haha 3" << std::endl;
 
     std::vector< bool > chessboardFound( imageFilenames.size( ), false );
@@ -201,24 +198,37 @@ main( int argc, char** argv )
     calib_vignetting.solve( );
 
     std::cout << " Calibrate done." << std::endl;
-
-    calib_vignetting.resualt( );
-
-    for ( size_t i = 0; i < imageFilenames.size( ); ++i )
-    {
-        cv::Mat image_in   = cv::imread( imageFilenames.at( i ), -1 );
-        cv::Mat image_show = calib_vignetting.remove( image_in );
-        cv::namedWindow( "image_in", cv::WINDOW_NORMAL );
-        cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
-        cv::imshow( "image_in", image_in );
-        cv::imshow( "image_show", image_show );
-        cv::waitKey( 0 );
-    }
-
     if ( verbose )
     {
         std::cout << "# INFO: Calibration took a total time of " << std::fixed << std::setprecision( 3 )
                   << camera_model::timeInSeconds( ) - startTime << " sec.\n";
+    }
+
+    calib_vignetting.showResualt( );
+
+    camera_model::VignettingTable vignetting( input_image_size, file, boardSize, calib_vignetting.getParams( ), is_color );
+
+    for ( size_t i = 0; i < imageFilenames.size( ); ++i )
+    {
+        cv::Mat image_in = cv::imread( imageFilenames.at( i ), cv::IMREAD_GRAYSCALE );
+
+        startTime          = camera_model::timeInSeconds( );
+        cv::Mat image_show = calib_vignetting.remove( image_in );
+        std::cout << "# INFO: Remove cost " << std::fixed << std::setprecision( 3 )
+                  << ( camera_model::timeInSeconds( ) - startTime ) * 1000 << " ms.\n";
+
+        startTime         = camera_model::timeInSeconds( );
+        cv::Mat image_out = vignetting.removeLUT( image_in );
+        std::cout << "# INFO: removeLUT cost " << std::fixed << std::setprecision( 3 )
+                  << ( camera_model::timeInSeconds( ) - startTime ) * 1000 << " ms.\n";
+
+        cv::namedWindow( "image_in", cv::WINDOW_NORMAL );
+        cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
+        cv::namedWindow( "image_out", cv::WINDOW_NORMAL );
+        cv::imshow( "image_in", image_in );
+        cv::imshow( "image_show", image_show );
+        cv::imshow( "image_out", image_out );
+        cv::waitKey( 0 );
     }
 
     return 0;

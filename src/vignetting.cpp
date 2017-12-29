@@ -1,91 +1,98 @@
 #include "vignetting.h"
 
-void
-camera_model::vignetting::addValue( cv::Mat& image, cv::Mat& image_color, double& index_x, double& index_y, int threshold )
+camera_model::vignetting::vignetting( cv::Size _image_size, std::string camera_model_file, cv::Size boardSize, bool _is_color )
+: image_size( _image_size )
+, chessbordSize( boardSize )
+, m_is_color( _is_color )
 {
-    int value = image.at< uchar >( index_y, index_x );
-    if ( value < threshold )
-        drawRedPoint( image_color, index_x, index_y );
+    cam = camera_model::CameraFactory::instance( )->generateCameraFromYamlFile( camera_model_file );
+
+    if ( m_is_color )
+    {
+        m_params.resize( 3 );
+        m_params.at( 0 ).resize( ORDER_POLY );
+        m_params.at( 1 ).resize( ORDER_POLY );
+        m_params.at( 2 ).resize( ORDER_POLY );
+        intensituValues.resize( 3 );
+    }
     else
     {
-        value = getValue9( image, index_x, index_y );
+        m_params.resize( 1 );
+        m_params.at( 0 ).resize( ORDER_POLY );
+        intensituValues.resize( 1 );
+    }
 
-        greyValues.push_back( value );
-        double new_r = distance( index_x, index_y, center( 0 ), center( 1 ) );
-        rs.push_back( new_r );
-        drawGreenPoint( image_color, index_x, index_y );
+    //        image_size = cv::Size( cam->imageWidth( ), cam->imageHeight( ) );
+    center( 0 ) = image_size.width / 2;
+    center( 1 ) = image_size.height / 2;
+    //        center( 0 ) = 659.363; // image_size.width / 2;
+    //        center( 1 ) = 516.62;  // image_size.height / 2;
+}
+
+double
+camera_model::vignetting::get( int xx, int yy, int index )
+{
+    double dis = distance( double( xx ), double( yy ), center( 0 ), center( 1 ) );
+    //        std::cout << " dis " << dis << std::endl;
+    double r = m_params.at( index ).at( 0 ) + m_params.at( index ).at( 1 ) * dis * dis
+               + m_params.at( index ).at( 2 ) * dis * dis * dis * dis
+               + m_params.at( index ).at( 3 ) * dis * dis * dis * dis * dis * dis;
+
+    return r;
+}
+
+cv::Mat
+camera_model::vignetting::remove( cv::Mat image_in )
+{
+    if ( m_is_color )
+    {
+        cv::Mat image_tmp( image_in.rows, image_in.cols, CV_8UC3 );
+        for ( int raw_index = 0; raw_index < image_size.height; ++raw_index )
+            for ( int col_index = 0; col_index < image_size.width; ++col_index )
+            {
+                cv::Vec3b velue = image_in.at< cv::Vec3b >( raw_index, col_index );
+                cv::Vec3b valuw_feeded;
+                double feed[3];
+                for ( int index = 0; index < 3; ++index )
+                {
+                    feed[index] = m_params.at( index ).at( 0 ) / get( col_index, raw_index, index );
+                    int value_feeded_tmp = velue[index] * feed[index];
+                    if ( value_feeded_tmp > 255 )
+                        value_feeded_tmp = 255;
+                    if ( value_feeded_tmp < 0 )
+                        value_feeded_tmp = 0;
+                    valuw_feeded[index]  = value_feeded_tmp;
+                    //  std::cout << " valuw_feeded[index] " <<  valuw_feeded[index] <<
+                    //  std::endl;
+                }
+                image_tmp.at< cv::Vec3b >( raw_index, col_index ) = valuw_feeded;
+            }
+        return image_tmp;
+    }
+    else
+    {
+        cv::Mat image_tmp( image_in.rows, image_in.cols, CV_8UC1 );
+        for ( int raw_index = 0; raw_index < image_size.height; ++raw_index )
+        {
+            for ( int col_index = 0; col_index < image_size.width; ++col_index )
+            {
+                double feed      = m_params[0][0] / get( col_index, raw_index, 0 );
+                int velue        = image_in.at< uchar >( raw_index, col_index );
+                int valuw_feeded = velue * feed;
+                if ( valuw_feeded > 255 )
+                    valuw_feeded = 255;
+                if ( valuw_feeded < 0 )
+                    valuw_feeded = 0;
+
+                image_tmp.at< uchar >( raw_index, col_index ) = valuw_feeded;
+            }
+        }
+        return image_tmp;
     }
 }
 
-void
-camera_model::vignetting::inBoard( double& x_index, double& y_index )
+std::vector< std::vector< double > >
+camera_model::vignetting::getParams( ) const
 {
-    x_index = x_index < 0.0 ? 0.0 : x_index;
-    x_index = x_index > ( double )image_size.width ? ( double )image_size.width : x_index;
-
-    y_index = y_index < 0.0 ? 0.0 : y_index;
-    y_index = y_index > ( double )image_size.height ? ( double )image_size.height : y_index;
-}
-
-void
-camera_model::vignetting::drawRedPoint( cv::Mat& image_color, int x_index, int y_index )
-{
-    int drawShiftBits  = 4;
-    int drawMultiplier = 1 << drawShiftBits;
-    cv::Scalar yellow( 0, 255, 255 );
-    cv::Scalar green( 0, 255, 0 );
-    cv::Scalar red( 0, 0, 255 );
-    cv::circle( image_color,
-                cv::Point( cvRound( x_index * drawMultiplier ), cvRound( y_index * drawMultiplier ) ),
-                5,
-                red,
-                2,
-                CV_AA,
-                drawShiftBits );
-}
-
-void
-camera_model::vignetting::drawYellowPoint( cv::Mat& image_color, int x_index, int y_index )
-{
-    int drawShiftBits  = 4;
-    int drawMultiplier = 1 << drawShiftBits;
-    cv::Scalar yellow( 0, 255, 255 );
-    cv::Scalar green( 0, 255, 0 );
-    cv::Scalar red( 0, 0, 255 );
-    cv::circle( image_color,
-                cv::Point( cvRound( x_index * drawMultiplier ), cvRound( y_index * drawMultiplier ) ),
-                5,
-                yellow,
-                2,
-                CV_AA,
-                drawShiftBits );
-}
-
-void
-camera_model::vignetting::drawGreenPoint( cv::Mat& image_color, int x_index, int y_index )
-{
-    int drawShiftBits  = 4;
-    int drawMultiplier = 1 << drawShiftBits;
-    cv::Scalar yellow( 0, 255, 255 );
-    cv::Scalar green( 0, 255, 0 );
-    cv::Scalar red( 0, 0, 255 );
-    cv::circle( image_color,
-                cv::Point( cvRound( x_index * drawMultiplier ), cvRound( y_index * drawMultiplier ) ),
-                5,
-                green,
-                2,
-                CV_AA,
-                drawShiftBits );
-}
-
-int
-camera_model::vignetting::getValue9( const cv::Mat image, int x_index, int y_index )
-{
-    int value
-    = image.at< uchar >( y_index - 1, x_index - 1 ) + image.at< uchar >( y_index - 1, x_index )
-      + image.at< uchar >( y_index - 1, x_index + 1 ) + image.at< uchar >( y_index, x_index - 1 )
-      + image.at< uchar >( y_index, x_index ) + image.at< uchar >( y_index, x_index + 1 )
-      + image.at< uchar >( y_index + 1, x_index - 1 ) + image.at< uchar >( y_index + 1, x_index )
-      + image.at< uchar >( y_index + 1, x_index + 1 );
-    return ( value / 9 );
+    return m_params;
 }
