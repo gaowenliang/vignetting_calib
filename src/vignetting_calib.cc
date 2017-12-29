@@ -207,6 +207,7 @@ main( int argc, char** argv )
     }
 
     calib_vignetting.showResualt( );
+
     calib_vignetting.writeToYamlFile( cameraName + "_vignetting_calib.yaml" );
 
     camera_model::VignettingTable vignetting( cameraName + "_vignetting_calib.yaml" );
