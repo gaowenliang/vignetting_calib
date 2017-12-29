@@ -19,7 +19,6 @@ backward::SignalHandling sh;
 #include <camera_model/code_utils/cv_utils.h>
 #include <camera_model/gpl/gpl.h>
 
-#include "vignetting/vignettingcalib.h"
 #include "vignetting/vignettingtable.h"
 
 int
@@ -37,7 +36,7 @@ main( int argc, char** argv )
     bool verbose;
     bool is_save_images;
     std::string result_images_save_folder;
-    int threshold      = 60;
+
     float resize_scale = 1.0;
     cv::Size cropper_size( 0, 0 );
     cv::Point cropper_center( 100, 100 );
@@ -71,7 +70,6 @@ main( int argc, char** argv )
         ( "center_x", value< int >( &cropper_center.x )->default_value( 0 ), "cropper image center x " )
         ( "center_y", value< int >( &cropper_center.y )->default_value( 0 ), "cropper image center y " )
         ( "is_color", value< bool >( &is_color )->default_value( false ), " is_color " )
-        ( "threshold", value< int >( &threshold )->default_value( 60 ), " is_color " )
         ;
     /* clang-format on */
     boost::program_options::positional_options_description pdesc;
@@ -147,90 +145,37 @@ main( int argc, char** argv )
     cv::Size input_image_size( image.cols, image.rows );
     std::string file = cameraName + "_camera_calib.yaml";
 
-    camera_model::VignettingCalib calib_vignetting( file, boardSize, is_color );
     std::cout << " haha 3" << std::endl;
 
     std::vector< bool > chessboardFound( imageFilenames.size( ), false );
 
-    int index = 0;
-    //#pragma omp parallel for private( index )
-    for ( index = 0; index < imageFilenames.size( ); ++index )
-    {
-        image = cv::imread( imageFilenames.at( index ), -1 );
-
-        camera_model::Chessboard chessboard( boardSize, image );
-
-        chessboard.findCorners( useOpenCV );
-        if ( chessboard.cornersFound( ) )
-        {
-            if ( verbose )
-            {
-                std::cerr << "# INFO: Detected chessboard in image " << index + 1 << ", "
-                          << imageFilenames.at( index ) << std::endl;
-            }
-
-            cv::Mat image_show = calib_vignetting.getPoints( image, chessboard.getCorners( ), threshold );
-
-            cv::Mat sketch;
-            chessboard.getSketch( ).copyTo( sketch );
-
-            cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
-            cv::imshow( "image_show", image_show );
-            cv::waitKey( 1 );
-        }
-        else if ( verbose )
-        {
-            std::cout << "\033[31;47;1m"
-                      << "# INFO: Did not detect chessboard in image: " << imageFilenames.at( index )
-                      << "\033[0m" << std::endl;
-        }
-        chessboardFound.at( index ) = chessboard.cornersFound( );
-    }
-    cv::destroyWindow( "Image" );
-    std::cout << " haha 4" << std::endl;
-
-    if ( verbose )
-    {
-        std::cerr << "# INFO: Calibrating..." << std::endl;
-    }
-
     double startTime = camera_model::timeInSeconds( );
 
-    std::cout << " Calibrate start." << std::endl;
-    calib_vignetting.solve( );
+    camera_model::VignettingTable vignettingTable( cameraName + "_vignetting_calib.yaml" );
+    camera_model::vignetting vignetting( cameraName + "_vignetting_calib.yaml" );
 
-    std::cout << " Calibrate done." << std::endl;
-    if ( verbose )
-    {
-        std::cout << "# INFO: Calibration took a total time of " << std::fixed << std::setprecision( 3 )
-                  << camera_model::timeInSeconds( ) - startTime << " sec.\n";
-    }
-
-    calib_vignetting.showResualt( );
-    calib_vignetting.writeToYamlFile( cameraName + "_vignetting_calib.yaml" );
-
-    camera_model::VignettingTable vignetting( cameraName + "_vignetting_calib.yaml" );
+    vignetting.showResualt( );
 
     for ( size_t i = 0; i < imageFilenames.size( ); ++i )
     {
         cv::Mat image_in = cv::imread( imageFilenames.at( i ), -1 );
 
         startTime          = camera_model::timeInSeconds( );
-        cv::Mat image_show = calib_vignetting.remove( image_in );
+        cv::Mat image_show = vignetting.remove( image_in );
         std::cout << "# INFO: Remove cost " << std::fixed << std::setprecision( 3 )
                   << ( camera_model::timeInSeconds( ) - startTime ) * 1000 << " ms.\n";
 
         startTime         = camera_model::timeInSeconds( );
-        cv::Mat image_out = vignetting.removeLUT( image_in );
+        cv::Mat image_out = vignettingTable.removeLUT( image_in );
         std::cout << "# INFO: removeLUT cost " << std::fixed << std::setprecision( 3 )
                   << ( camera_model::timeInSeconds( ) - startTime ) * 1000 << " ms.\n";
 
         cv::namedWindow( "image_in", cv::WINDOW_NORMAL );
-        cv::namedWindow( "image_show", cv::WINDOW_NORMAL );
         cv::namedWindow( "image_out", cv::WINDOW_NORMAL );
+        cv::namedWindow( "image_LUT", cv::WINDOW_NORMAL );
         cv::imshow( "image_in", image_in );
-        cv::imshow( "image_show", image_show );
-        cv::imshow( "image_out", image_out );
+        cv::imshow( "image_out", image_show );
+        cv::imshow( "image_LUT", image_out );
         cv::waitKey( 0 );
     }
 

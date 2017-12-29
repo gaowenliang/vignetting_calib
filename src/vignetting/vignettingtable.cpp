@@ -1,25 +1,32 @@
 #include "vignettingtable.h"
 #include <opencv2/opencv.hpp>
 
+camera_model::VignettingTable::VignettingTable( std::string _vignetting_calib )
+: m_vignetting( _vignetting_calib )
+{
+    buildTable( );
+    std::cout << this->toString( ) << std::endl;
+}
+
 camera_model::VignettingTable::VignettingTable( cv::Size image_size,
-                                                std::string camera_model_file,
                                                 cv::Size boardSize,
                                                 std::vector< std::vector< double > > params,
                                                 bool _is_color )
-: vignetting( image_size, camera_model_file, boardSize, _is_color )
+: m_vignetting( image_size, boardSize, _is_color )
 {
-    m_params = params;
-
-    if ( m_is_color )
-        m_table = cv::Mat( image_size, CV_64FC3 );
-    else
-        m_table = cv::Mat( image_size, CV_64FC1 );
+    m_vignetting.setParams( params );
     buildTable( );
+    std::cout << this->toString( ) << std::endl;
 }
 
 void
 camera_model::VignettingTable::buildTable( )
 {
+    if ( m_vignetting.getIs_color( ) )
+        m_table = cv::Mat( m_vignetting.getImageSize( ), CV_64FC3 );
+    else
+        m_table = cv::Mat( m_vignetting.getImageSize( ), CV_64FC1 );
+
     int channels = m_table.channels( );
 
     for ( int row_index = 0; row_index < m_table.rows; ++row_index )
@@ -28,8 +35,9 @@ camera_model::VignettingTable::buildTable( )
         {
             for ( int channel_index = 0; channel_index < channels; ++channel_index )
             {
-                double feed = m_params[channel_index][0] / get( col_index, row_index, channel_index );
-                if ( m_is_color )
+                double feed = m_vignetting.getParams( )[channel_index][0]
+                              / m_vignetting.get( col_index, row_index, channel_index );
+                if ( m_vignetting.getIs_color( ) )
                     m_table.at< cv::Vec3d >( row_index, col_index )[channel_index] = feed;
                 else
                     m_table.at< double >( row_index, col_index ) = feed;
@@ -45,7 +53,7 @@ camera_model::VignettingTable::removeLUT( cv::Mat& src )
     int nRows    = src.rows;
     int nCols    = src.cols * channels;
 
-    if ( m_is_color )
+    if ( m_vignetting.getIs_color( ) )
     {
         cv::Mat dst( src.rows, src.cols, CV_8UC3 );
 
@@ -96,4 +104,12 @@ camera_model::VignettingTable::removeLUT( cv::Mat& src )
         }
         return dst;
     }
+}
+
+std::string
+camera_model::VignettingTable::toString( )
+{
+    std::ostringstream oss;
+    oss << m_vignetting;
+    return oss.str( );
 }

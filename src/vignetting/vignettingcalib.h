@@ -45,13 +45,15 @@ class VignettingCalib : public vignetting
 
     public:
     VignettingCalib( ) {}
-    VignettingCalib( cv::Size image_size, std::string camera_model_file, cv::Size boardSize, bool _is_color = false );
+    VignettingCalib( cv::Size image_size, cv::Size boardSize, bool _is_color = false );
+    VignettingCalib( std::string camera_model_file, cv::Size boardSize, bool _is_color = false );
 
+    void initCalib( );
     void readin_points( const std::vector< std::pair< cv::Point2d, std::vector< double > > > points );
     void solve( );
-    void showResualt( );
+
     void getValue9( std::vector< double >& value, const cv::Mat image, int x_index, int y_index );
-    cv::Mat getPoints( cv::Mat image_in, std::vector< cv::Point2f > points );
+    cv::Mat getPoints( cv::Mat image_in, std::vector< cv::Point2f > points, int threshold = 60 );
     void addValue( cv::Mat& image, cv::Mat& image_color, double& index_x, double& index_y, int threshold );
     template< typename T >
     T avgInThree( T x1, T x2, T x3 )
@@ -62,6 +64,11 @@ class VignettingCalib : public vignetting
     void drawRedPoint( cv::Mat& image_color, int x_index, int y_index );
     void drawYellowPoint( cv::Mat& image_color, int x_index, int y_index );
     void drawGreenPoint( cv::Mat& image_color, int x_index, int y_index );
+
+    private:
+    int points_num;
+    std::vector< std::vector< double > > intensituValues;
+    std::vector< double > rs;
 };
 }
 #endif // VIGNETTINGCALIB_H
