@@ -1,5 +1,5 @@
-#include "vignettingcalib.h"
 #include <opencv2/opencv.hpp>
+#include <vignetting_model/vignetting/vignettingcalib.h>
 
 camera_model::VignettingCalib::VignettingCalib( cv::Size image_size, cv::Size boardSize, bool _is_color )
 : vignetting( image_size, boardSize, _is_color )

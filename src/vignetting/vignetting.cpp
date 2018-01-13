@@ -1,4 +1,4 @@
-#include "vignetting.h"
+#include <vignetting_model/vignetting/vignetting.h>
 
 camera_model::vignetting::vignetting( std::string _vignetting_calib )
 {

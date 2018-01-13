@@ -16,11 +16,10 @@ backward::SignalHandling sh;
 
 //#include <camera_model/calib/CameraCalibration.h>
 #include <camera_model/chessboard/Chessboard.h>
-#include <camera_model/code_utils/cv_utils.h>
 #include <camera_model/gpl/gpl.h>
-
-#include "vignetting/vignettingcalib.h"
-#include "vignetting/vignettingtable.h"
+#include <code_utils/cv_utils.h>
+#include <vignetting_model/vignetting/vignettingcalib.h>
+#include <vignetting_model/vignetting/vignettingtable.h>
 
 int
 main( int argc, char** argv )

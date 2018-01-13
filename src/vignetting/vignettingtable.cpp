@@ -1,5 +1,5 @@
-#include "vignettingtable.h"
 #include <opencv2/opencv.hpp>
+#include <vignetting_model/vignetting/vignettingtable.h>
 
 camera_model::VignettingTable::VignettingTable( std::string _vignetting_calib )
 : m_vignetting( _vignetting_calib )

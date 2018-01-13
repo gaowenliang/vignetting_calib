@@ -8,6 +8,7 @@ namespace camera_model
 class VignettingTable
 {
     public:
+    VignettingTable( ) {}
     VignettingTable( std::string _vignetting_calib );
 
     VignettingTable( cv::Size image_size,

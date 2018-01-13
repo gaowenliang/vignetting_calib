@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package>
-  <name>vignetting_calib</name>
+  <name>vignetting_model</name>
   <version>0.0.0</version>
-  <description>The vignetting_calib package</description>
+  <description>The vignetting_model package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="dvorak@todo.todo">dvorak</maintainer>
+  <maintainer email="gaowenlaing@todo.todo">gaowenlaing</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/vignetting_calib</url> -->
+  <!-- <url type="website">http://wiki.ros.org/vignetting_model</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->
