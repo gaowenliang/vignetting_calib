@@ -24,7 +24,7 @@ class VignettingCalib : public vignetting
           return k0
               + k2 * r * r
               + k4 * r * r * r * r
-              /*+ k6 * r * r * r * r * r * r*/ ;
+              /*+ k6 * r * r * r * r * r * r */;
       }
         /* clang-format on */
 
@@ -45,6 +45,8 @@ class VignettingCalib : public vignetting
 
     public:
     VignettingCalib( ) {}
+    VignettingCalib( cv::Size image_size, bool _is_color );
+    VignettingCalib( std::string camera_model_file, bool _is_color );
     VignettingCalib( cv::Size image_size, cv::Size boardSize, bool _is_color = false );
     VignettingCalib( std::string camera_model_file, cv::Size boardSize, bool _is_color = false );
 
@@ -53,8 +55,13 @@ class VignettingCalib : public vignetting
     void solve( );
 
     void getValue9( std::vector< double >& value, const cv::Mat image, int x_index, int y_index );
-    cv::Mat getPoints( cv::Mat image_in, std::vector< cv::Point2f > points, int threshold = 60 );
-    void addValue( cv::Mat& image, cv::Mat& image_color, double& index_x, double& index_y, int threshold );
+    void getValue1( std::vector< double >& value, const cv::Mat image, int x_index, int y_index );
+
+    cv::Mat getChessboardPoints( cv::Mat image_in, std::vector< cv::Point2f > points, int threshold = 60 );
+    void getOnePoints( cv::Mat image_in, cv::Mat& image_color, cv::Point2f points, int threshold = 60 );
+
+    void addValue9( cv::Mat& image, cv::Mat& image_color, double& index_x, double& index_y, int threshold );
+    void addValue1( cv::Mat& image, cv::Mat& image_color, double& index_x, double& index_y, int threshold );
     template< typename T >
     T avgInThree( T x1, T x2, T x3 )
     {
@@ -65,10 +72,16 @@ class VignettingCalib : public vignetting
     void drawYellowPoint( cv::Mat& image_color, int x_index, int y_index );
     void drawGreenPoint( cv::Mat& image_color, int x_index, int y_index );
 
+    void setBoardSize( const cv::Size& boardSize );
+
+    private:
+    cv::Size getChessbordSize( ) { return mBoardSize; }
+
     private:
     int points_num;
     std::vector< std::vector< double > > intensituValues;
     std::vector< double > rs;
+    cv::Size mBoardSize;
 };
 }
 #endif // VIGNETTINGCALIB_H

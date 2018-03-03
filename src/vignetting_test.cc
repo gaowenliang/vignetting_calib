@@ -39,8 +39,8 @@ main( int argc, char** argv )
     float resize_scale = 1.0;
     cv::Size cropper_size( 0, 0 );
     cv::Point cropper_center( 100, 100 );
-    bool is_first_run = true;
-    bool is_color     = false;
+    //    bool is_first_run = true;
+    bool is_color = false;
 
     //========= Handling Program options =========
 

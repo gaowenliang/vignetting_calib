@@ -15,8 +15,8 @@ class vignetting
     public:
     vignetting( ) {}
     vignetting( std::string _vignetting_calib );
-    vignetting( cv::Size image_size, cv::Size boardSize, bool _is_color = false );
-    vignetting( std::string camera_model_file, cv::Size boardSize, bool _is_color = false );
+    vignetting( cv::Size image_size, bool _is_color );
+    vignetting( std::string camera_model_file, bool _is_color );
 
     void init( );
 
@@ -32,7 +32,6 @@ class vignetting
     cv::Size getImageSize( ) const;
     Eigen::Vector2d getCenter( ) const;
     bool getIs_color( ) const;
-    cv::Size getChessbordSize( ) const;
     friend std::ostream& operator<<( std::ostream& out, const vignetting& params );
 
     template< typename T >
@@ -47,7 +46,6 @@ class vignetting
 
     Eigen::Vector2d center;
     cv::Size image_size;
-    cv::Size chessbordSize;
 
     bool m_is_color;
 };

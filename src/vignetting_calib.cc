@@ -40,8 +40,8 @@ main( int argc, char** argv )
     float resize_scale = 1.0;
     cv::Size cropper_size( 0, 0 );
     cv::Point cropper_center( 100, 100 );
-    bool is_first_run = true;
-    bool is_color     = false;
+    //    bool is_first_run = true;
+    bool is_color = false;
 
     //========= Handling Program options =========
 
@@ -146,12 +146,14 @@ main( int argc, char** argv )
     cv::Size input_image_size( image.cols, image.rows );
     std::string file = cameraName + "_camera_calib.yaml";
 
-    camera_model::VignettingCalib calib_vignetting( file, boardSize, is_color );
+    camera_model::VignettingCalib calib_vignetting( file, is_color );
+
+    calib_vignetting.setBoardSize( boardSize );
     std::cout << " haha 3" << std::endl;
 
     std::vector< bool > chessboardFound( imageFilenames.size( ), false );
 
-    int index = 0;
+    unsigned int index = 0;
     //#pragma omp parallel for private( index )
     for ( index = 0; index < imageFilenames.size( ); ++index )
     {
@@ -168,7 +170,8 @@ main( int argc, char** argv )
                           << imageFilenames.at( index ) << std::endl;
             }
 
-            cv::Mat image_show = calib_vignetting.getPoints( image, chessboard.getCorners( ), threshold );
+            cv::Mat image_show
+            = calib_vignetting.getChessboardPoints( image, chessboard.getCorners( ), threshold );
 
             cv::Mat sketch;
             chessboard.getSketch( ).copyTo( sketch );

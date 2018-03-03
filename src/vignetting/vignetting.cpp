@@ -5,9 +5,8 @@ camera_model::vignetting::vignetting( std::string _vignetting_calib )
     readFromYamlFile( _vignetting_calib );
 }
 
-camera_model::vignetting::vignetting( cv::Size _image_size, cv::Size boardSize, bool _is_color )
+camera_model::vignetting::vignetting( cv::Size _image_size, bool _is_color )
 : image_size( _image_size )
-, chessbordSize( boardSize )
 , m_is_color( _is_color )
 {
     center( 0 ) = image_size.width / 2;
@@ -15,9 +14,8 @@ camera_model::vignetting::vignetting( cv::Size _image_size, cv::Size boardSize, 
     init( );
 }
 
-camera_model::vignetting::vignetting( std::string camera_model_file, cv::Size boardSize, bool _is_color )
-: chessbordSize( boardSize )
-, m_is_color( _is_color )
+camera_model::vignetting::vignetting( std::string camera_model_file, bool _is_color )
+: m_is_color( _is_color )
 {
     cam = camera_model::CameraFactory::instance( )->generateCameraFromYamlFile( camera_model_file );
 
@@ -204,12 +202,6 @@ bool
 camera_model::vignetting::getIs_color( ) const
 {
     return m_is_color;
-}
-
-cv::Size
-camera_model::vignetting::getChessbordSize( ) const
-{
-    return chessbordSize;
 }
 
 namespace camera_model

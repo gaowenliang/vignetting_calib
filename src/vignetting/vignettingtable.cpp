@@ -9,10 +9,9 @@ camera_model::VignettingTable::VignettingTable( std::string _vignetting_calib )
 }
 
 camera_model::VignettingTable::VignettingTable( cv::Size image_size,
-                                                cv::Size boardSize,
                                                 std::vector< std::vector< double > > params,
                                                 bool _is_color )
-: m_vignetting( image_size, boardSize, _is_color )
+: m_vignetting( image_size, _is_color )
 {
     m_vignetting.setParams( params );
     buildTable( );
@@ -112,4 +111,10 @@ camera_model::VignettingTable::toString( )
     std::ostringstream oss;
     oss << m_vignetting;
     return oss.str( );
+}
+
+cv::Mat
+camera_model::VignettingTable::getTable( ) const
+{
+    return m_table;
 }
