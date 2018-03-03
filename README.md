@@ -50,12 +50,17 @@ Check the threshold between the black squares and the write squares. Finish
 ./vignetting_calib --camera-name wkx --input wkx/ -p IMG_ -e png -w 9 -h 8 --size 70 --opencv true --resize-scale 1.0 --cropper_width 0 --cropper_height 0 --center_x 640 --center_y 512 --save_result true --is_color false --threshold 45
 ```
 If the threshold is right, the chessboard in the oputput images will be marked with green and red points. 
+
 <img src="figure/calib_image.png" width=482 height=363>
 
 ### the sample output 
+
 vignetting map:
+
 <img src="figure/map.png" width=482 height=363>
+
 sample parameter:
+
 ```
 model_type: VIGNETTING
 image_width: 1280
@@ -74,10 +79,15 @@ vignetting_parameters:
 
 ## vignetting correction
 Raw image:
+
 <img src="figure/raw.png" width=613 height=490>
+
 correction image:
+
 <img src="figure/cali.png" width=613 height=490>
+
 compared image:
+
 <img src="figure/mix.png" width=613 height=490>
 
 
