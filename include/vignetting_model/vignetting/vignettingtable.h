@@ -10,10 +10,11 @@ class VignettingTable
     public:
     VignettingTable( ) {}
     VignettingTable( std::string _vignetting_calib );
-    VignettingTable( std::string _vignetting_calib, cv::Mat mask );
+    VignettingTable( std::string _vignetting_calib, std::string mask_file );
     VignettingTable( cv::Size image_size, std::vector< std::vector< double > > params, bool _is_color = false );
 
     void buildTable( );
+    void buildTable( const std::string file_mask );
     cv::Mat removeLUT( cv::Mat& src );
     cv::Mat getTable( ) const;
 
@@ -22,7 +23,6 @@ class VignettingTable
     private:
     vignetting m_vignetting;
     cv::Mat m_table;
-    cv::Mat m_mask;
 };
 }
 
