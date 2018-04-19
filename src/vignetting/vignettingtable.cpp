@@ -8,6 +8,14 @@ camera_model::VignettingTable::VignettingTable( std::string _vignetting_calib )
     std::cout << this->toString( ) << std::endl;
 }
 
+camera_model::VignettingTable::VignettingTable( std::string _vignetting_calib, cv::Mat mask )
+: m_vignetting( _vignetting_calib )
+, m_mask( mask )
+{
+    buildTable( );
+    std::cout << this->toString( ) << std::endl;
+}
+
 camera_model::VignettingTable::VignettingTable( cv::Size image_size,
                                                 std::vector< std::vector< double > > params,
                                                 bool _is_color )
@@ -48,60 +56,135 @@ camera_model::VignettingTable::buildTable( )
 cv::Mat
 camera_model::VignettingTable::removeLUT( cv::Mat& src )
 {
+
     int channels = src.channels( );
     int nRows    = src.rows;
     int nCols    = src.cols * channels;
 
-    if ( m_vignetting.getIs_color( ) )
+    if ( m_mask.empty( ) )
     {
-        cv::Mat dst( src.rows, src.cols, CV_8UC3 );
-
-        uchar* p_src;
-        uchar* p_dst;
-        double* p_table;
-        int value;
-        int row_index, col_index;
-        for ( row_index = 0; row_index < nRows; ++row_index )
+        if ( m_vignetting.getIs_color( ) )
         {
-            p_src   = src.ptr< uchar >( row_index );
-            p_dst   = dst.ptr< uchar >( row_index );
-            p_table = m_table.ptr< double >( row_index );
-            for ( col_index = 0; col_index < nCols; ++col_index )
-            {
-                value = p_table[col_index] * p_src[col_index];
-                if ( value > 255 )
-                    value = 255;
+            cv::Mat dst( src.rows, src.cols, CV_8UC3 );
 
-                p_dst[col_index] = value;
+            uchar* p_src;
+            uchar* p_dst;
+            double* p_table;
+            int value;
+            int row_index, col_index;
+            for ( row_index = 0; row_index < nRows; ++row_index )
+            {
+                p_src   = src.ptr< uchar >( row_index );
+                p_dst   = dst.ptr< uchar >( row_index );
+                p_table = m_table.ptr< double >( row_index );
+                for ( col_index = 0; col_index < nCols; ++col_index )
+                {
+                    value = p_table[col_index] * p_src[col_index];
+                    if ( value > 255 )
+                        value = 255;
+
+                    p_dst[col_index] = value;
+                }
             }
+            return dst;
         }
-        return dst;
+        else
+        {
+            cv::Mat dst( src.rows, src.cols, CV_8UC1 );
+
+            uchar* p_src;
+            uchar* p_dst;
+            double* p_table;
+            int value;
+            int row_index, col_index;
+
+            for ( row_index = 0; row_index < nRows; ++row_index )
+            {
+                p_src   = src.ptr< uchar >( row_index );
+                p_dst   = dst.ptr< uchar >( row_index );
+                p_table = m_table.ptr< double >( row_index );
+                for ( col_index = 0; col_index < nCols; ++col_index )
+                {
+                    value = p_table[col_index] * p_src[col_index];
+                    if ( value > 255 )
+                        value = 255;
+
+                    p_dst[col_index] = value;
+                }
+            }
+            return dst;
+        }
     }
     else
     {
-        cv::Mat dst( src.rows, src.cols, CV_8UC1 );
-
-        uchar* p_src;
-        uchar* p_dst;
-        double* p_table;
-        int value;
-        int row_index, col_index;
-
-        for ( row_index = 0; row_index < nRows; ++row_index )
+        if ( m_vignetting.getIs_color( ) )
         {
-            p_src   = src.ptr< uchar >( row_index );
-            p_dst   = dst.ptr< uchar >( row_index );
-            p_table = m_table.ptr< double >( row_index );
-            for ( col_index = 0; col_index < nCols; ++col_index )
-            {
-                value = p_table[col_index] * p_src[col_index];
-                if ( value > 255 )
-                    value = 255;
+            cv::Mat dst( src.rows, src.cols, CV_8UC3, cv::Scalar( 0 ) );
 
-                p_dst[col_index] = value;
+            uchar* p_src;
+            uchar* p_dst;
+            uchar* p_mask;
+            double* p_table;
+            int value;
+            int row_index, col_index;
+            for ( row_index = 0; row_index < nRows; ++row_index )
+            {
+                p_src   = src.ptr< uchar >( row_index );
+                p_dst   = dst.ptr< uchar >( row_index );
+                p_mask  = m_mask.ptr< uchar >( row_index );
+                p_table = m_table.ptr< double >( row_index );
+                for ( col_index = 0; col_index < nCols; ++col_index )
+                {
+                    if ( p_mask[col_index] )
+                    {
+                        value = p_src[col_index];
+                    }
+                    else
+                    {
+                        value = p_table[col_index] * p_src[col_index];
+                        if ( value > 255 )
+                            value = 255;
+                    }
+                    p_dst[col_index] = value;
+                }
             }
+            return dst;
         }
-        return dst;
+        else
+        {
+            cv::Mat dst( src.rows, src.cols, CV_8UC1, cv::Scalar( 0 ) );
+
+            uchar* p_src;
+            uchar* p_dst;
+            uchar* p_mask;
+            double* p_table;
+            int value;
+            int row_index, col_index;
+
+            for ( row_index = 0; row_index < nRows; ++row_index )
+            {
+                p_src   = src.ptr< uchar >( row_index );
+                p_dst   = dst.ptr< uchar >( row_index );
+                p_mask  = m_mask.ptr< uchar >( row_index );
+                p_table = m_table.ptr< double >( row_index );
+                for ( col_index = 0; col_index < nCols; ++col_index )
+                {
+                    if ( p_mask[col_index] )
+                    {
+                        value = p_src[col_index];
+                    }
+                    else
+                    {
+                        value = p_table[col_index] * p_src[col_index];
+                        if ( value > 255 )
+                            value = 255;
+                    }
+
+                    p_dst[col_index] = value;
+                }
+            }
+            return dst;
+        }
     }
 }
 
